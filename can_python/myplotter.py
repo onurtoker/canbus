@@ -23,8 +23,8 @@ class RtPlotter(QtWidgets.QMainWindow):
         self.curves = len(fifo_list) * [None]
         self.fids = len(fifo_list) * [None]
         for (k, fifo) in enumerate(fifo_list):
-            xvals = np.zeros(100)  # 100 time points
-            yvals = np.zeros(100)  # 100 time points
+            xvals = np.zeros(1000)  # 100 time points
+            yvals = np.zeros(1000)  # 100 time points
             curve = self.graphWidget.plot(xvals, yvals, pen=pg.intColor(k), name=name_list[k],
                                           symbol='s', symbolBrush=pg.intColor(k), symbolPen='w')
             self.curves[k] = [xvals, yvals, curve]
@@ -39,22 +39,25 @@ class RtPlotter(QtWidgets.QMainWindow):
         self.timer.start()
 
     def __update_plot_data(self):
-        # print('__update called')
         for (k,(xvals, yvals, curve)) in enumerate(self.curves):
-            while not self.fifo_list[k].empty():
-                try:
-                    (xn, yn) = self.fifo_list[k].get(timeout=0.01)
-                    xvals = self.curves[k][0]
-                    self.curves[k][0] = xvals = np.append(xvals[1:], xn)
-                    yvals = self.curves[k][1]
-                    self.curves[k][1] = yvals = np.append(yvals[1:], yn)
-                    curve = self.curves[k][2]
-                    curve.setData(xvals, yvals)
+            sz = self.fifo_list[k].qsize()
+            if (sz < 5): continue
+            xn = np.zeros(sz)
+            yn = np.zeros(sz)
+            for i in range(sz):
+                (xn[i], yn[i]) = self.fifo_list[k].get(timeout=100e-3)
+                if not(self.file_list[k] is None):
+                    self.fids[k].write('%8.3f, %8.3f \n' % (xn, yn))
 
-                    if not(self.file_list[k] is None):
-                        self.fids[k].write('%8.3f, %8.3f \n' % (xn, yn))
-                except Exception as ex:
-                    print('RtPlotter', ex)
+            xvals = self.curves[k][0]
+            self.curves[k][0] = xvals = np.append(xvals[sz:], xn)
+            yvals = self.curves[k][1]
+            self.curves[k][1] = yvals = np.append(yvals[sz:], yn)
+            curve = self.curves[k][2]
+            curve.setData(xvals, yvals)
+
+            # except Exception as ex:
+            #     print('RtPlotter', ex)
 
     def run(self, app):
         self.setWindowTitle('GraphWindow')
@@ -62,4 +65,5 @@ class RtPlotter(QtWidgets.QMainWindow):
         app.exec_()
 
         for fid in self.fids:
-            fid.close()
+            if not(fid is None):
+                fid.close()

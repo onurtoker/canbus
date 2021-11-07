@@ -30,24 +30,17 @@ CAN_HandleTypeDef hcan1;
 TIM_HandleTypeDef htim6;
 UART_HandleTypeDef huart2;
 
-CAN_TxHeaderTypeDef TxHeader;
-CAN_RxHeaderTypeDef RxHeader;
-
 uint8_t TxData[8];
 uint8_t RxData[8];
+//int datacheck = 0;
 
-uint32_t TxMailbox;
-
-int datacheck = 0;
-
-void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
-{
-	HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &RxHeader, RxData);
-	if (RxHeader.DLC == 8)
-	{
-		datacheck = 1;
-	}
-}
+//// see canbus.c to enable/disable this callback function
+//void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
+//{
+//	HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &RxHeader, RxData);
+//	if (RxHeader.DLC == 8)
+//		datacheck = 1;
+//}
 
 /**
   * @brief  The application entry point.
@@ -68,37 +61,35 @@ int main(void)
 
 	CAN_RX_Config();
 	CAN_TX_Config();
+	// Start the CAN bus
     if (HAL_CAN_Start(&hcan1) != HAL_OK)
         printf("HAL_CAN_Start Error\r\n");
 
-	// Transmit example
-    while (1) {
-		TxHeader.DLC = 8;  // data length
-		TxHeader.IDE = CAN_ID_STD;
-		TxHeader.RTR = CAN_RTR_DATA;
-		TxHeader.StdId = 0x103;  // ID
-		uint8_t TxData[] = {0x01,0x02,0x03,0x04,0x05,0x06,0x07,0x08}; // Tx Buffer
-		if (HAL_CAN_AddTxMessage(&hcan1, &TxHeader, TxData, &TxMailbox) != HAL_OK)
-		{
-			 printf("CAN bus error\r\n");
-			 printf("System RESET needed\r\n");
-			 Error_Handler ();
-		}
-		else
-			printf("CAN bus OK\r\n");
-		HAL_Delay(100);
-	}
+	//HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_SET);
+	//HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_RESET);
+
+//	// Transmit example
+//    while (1) {
+//    	for (int i = 0; i < 8; i++) TxData[i] = i+1;
+//		if (CAN_write(&hcan1, (uint16_t) 0x103, TxData) != HAL_OK) {
+//			 printf("CAN bus error\r\n");
+//			 //printf("System RESET needed\r\n");
+//			 Error_Handler ();
+//		}
+//		else
+//			printf("CAN bus OK\r\n");
+//		HAL_Delay(100);
+//	}
 
     // Receive example
 	while (1) {
-		//HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_SET);
-		if (datacheck) {
-			printf("\r\n%04lx : ", RxHeader.StdId);
-			for (int i=0; i<8; i++)
-				printf("%02x ", RxData[i]);
-			datacheck = 0;
+		uint16_t fid;
+		HAL_StatusTypeDef rc;
+		rc = CAN_read(&hcan1, &fid, RxData);
+		if (rc == HAL_OK) {
+			printf("\r\n%04x : ", fid);
+			for (int i=0; i<8; i++) printf("%02x ", RxData[i]);
 		}
-		//HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_RESET);
 	}
 
 }

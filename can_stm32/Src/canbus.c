@@ -9,6 +9,11 @@
 #include "canbus.h"
 #include <stdio.h>
 
+CAN_TxHeaderTypeDef TxHeader;
+uint32_t TxMailbox;
+CAN_RxHeaderTypeDef RxHeader;
+
+
 /**
   * @brief CAN1 Initialization Function
   * @param None
@@ -49,9 +54,11 @@ void CAN_RX_Config(void)
     sFilterConfig.FilterBank = 0;
     sFilterConfig.FilterMode = CAN_FILTERMODE_IDMASK;
     sFilterConfig.FilterScale = CAN_FILTERSCALE_32BIT;
-    sFilterConfig.FilterIdHigh = 0x111 << 5;
+    //sFilterConfig.FilterIdHigh = 0x111 << 5;
+    sFilterConfig.FilterIdHigh = 0x000 << 5;
     sFilterConfig.FilterIdLow = CAN_ID_STD;
-    sFilterConfig.FilterMaskIdHigh = 0x7ff << 5;
+    //sFilterConfig.FilterMaskIdHigh = 0x7ff << 5;
+    sFilterConfig.FilterMaskIdHigh = 0x000 << 5;
     sFilterConfig.FilterMaskIdLow = CAN_ID_STD;
     sFilterConfig.FilterFIFOAssignment = CAN_RX_FIFO0;
     sFilterConfig.FilterActivation = ENABLE;
@@ -63,11 +70,12 @@ void CAN_RX_Config(void)
         printf("HAL_CAN_ConfigFilter Error\r\n");
     }
 
-    //Activation can RX notification
-    if (HAL_CAN_ActivateNotification(&hcan1, CAN_IT_RX_FIFO0_MSG_PENDING) != HAL_OK)
-    {
-    	printf("HAL_CAN_IntEnable Error\r\n");
-    }
+//    //Activation can RX notification
+//    if (HAL_CAN_ActivateNotification(&hcan1, CAN_IT_RX_FIFO0_MSG_PENDING) != HAL_OK)
+//    {
+//    	printf("HAL_CAN_RXIntEnable Error\r\n");
+//    }
+
 }
 
 /**
@@ -79,3 +87,21 @@ void CAN_TX_Config(void)
 {
 
 }
+
+HAL_StatusTypeDef CAN_write(CAN_HandleTypeDef* hcan, uint16_t id, uint8_t* TxData)
+{
+	TxHeader.DLC = 8;  // data length
+	TxHeader.IDE = CAN_ID_STD;
+	TxHeader.RTR = CAN_RTR_DATA;
+	TxHeader.StdId = id;  // ID
+	return(HAL_CAN_AddTxMessage(hcan, &TxHeader, TxData, &TxMailbox));
+}
+
+HAL_StatusTypeDef CAN_read(CAN_HandleTypeDef* hcan, uint16_t* id, uint8_t* RxData)
+{
+	HAL_StatusTypeDef rc = HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &RxHeader, RxData);
+	*id = RxHeader.StdId;
+
+	return(rc);
+}
+
