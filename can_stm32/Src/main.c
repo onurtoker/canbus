@@ -68,28 +68,36 @@ int main(void)
 	//HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_SET);
 	//HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_RESET);
 
-//	// Transmit example
-//    while (1) {
-//    	for (int i = 0; i < 8; i++) TxData[i] = i+1;
-//		if (CAN_write(&hcan1, (uint16_t) 0x103, TxData) != HAL_OK) {
-//			 printf("CAN bus error\r\n");
-//			 //printf("System RESET needed\r\n");
-//			 Error_Handler ();
-//		}
-//		else
-//			printf("CAN bus OK\r\n");
-//		HAL_Delay(100);
-//	}
+    uint16_t breakPC = 0xFFFF;
+    uint16_t wheelRPM = 0x0000;
+    TxData[2] = 0x20; TxData[3] = 0x03; TxData[4] = TxData[5] = TxData[6] = TxData[7] = 0;
 
-    // Receive example
-	while (1) {
+    while (1) {
+		// Transmit break pedal command
+		TxData[0] = 0x00FF & breakPC;
+		TxData[1] = breakPC >> 8;
+		if (CAN_write(&hcan1, (uint16_t) 0x060, TxData) != HAL_OK) {
+			 printf("CAN bus error\r\n");
+			 //printf("System RESET needed\r\n");
+			 Error_Handler ();
+		}
+		//HAL_Delay(20);
+		printf("breakPC = %04x ", breakPC);
+
+		// Receive example
 		uint16_t fid;
 		HAL_StatusTypeDef rc;
 		rc = CAN_read(&hcan1, &fid, RxData);
 		if (rc == HAL_OK) {
-			printf("\r\n%04x : ", fid);
-			for (int i=0; i<8; i++) printf("%02x ", RxData[i]);
+			//printf("\r\n%04x : ", fid);
+			//for (int i=0; i<8; i++) printf("%02x ", RxData[i]);
+			wheelRPM = ((uint16_t) RxData[0]) + (((uint16_t) RxData[1]) << 8);
+			printf("wheelRPM = %04x\r\n", wheelRPM);
+
+			if (wheelRPM < 0x0002)
+				breakPC--;
 		}
+
 	}
 
 }

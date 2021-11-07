@@ -54,11 +54,13 @@ void CAN_RX_Config(void)
     sFilterConfig.FilterBank = 0;
     sFilterConfig.FilterMode = CAN_FILTERMODE_IDMASK;
     sFilterConfig.FilterScale = CAN_FILTERSCALE_32BIT;
-    //sFilterConfig.FilterIdHigh = 0x111 << 5;
-    sFilterConfig.FilterIdHigh = 0x000 << 5;
+
+    sFilterConfig.FilterIdHigh = 0x06a << 5;
+    sFilterConfig.FilterMaskIdHigh = 0x7ff << 5;
+    //sFilterConfig.FilterIdHigh = 0x000 << 5;
+    //sFilterConfig.FilterMaskIdHigh = 0x000 << 5;
+
     sFilterConfig.FilterIdLow = CAN_ID_STD;
-    //sFilterConfig.FilterMaskIdHigh = 0x7ff << 5;
-    sFilterConfig.FilterMaskIdHigh = 0x000 << 5;
     sFilterConfig.FilterMaskIdLow = CAN_ID_STD;
     sFilterConfig.FilterFIFOAssignment = CAN_RX_FIFO0;
     sFilterConfig.FilterActivation = ENABLE;
