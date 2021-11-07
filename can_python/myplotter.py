@@ -47,7 +47,7 @@ class RtPlotter(QtWidgets.QMainWindow):
             for i in range(sz):
                 (xn[i], yn[i]) = self.fifo_list[k].get(timeout=100e-3)
                 if not(self.file_list[k] is None):
-                    self.fids[k].write('%8.3f, %8.3f \n' % (xn, yn))
+                    self.fids[k].write('%8.3f, %8.3f \n' % (xn[i], yn[i]))
 
             xvals = self.curves[k][0]
             self.curves[k][0] = xvals = np.append(xvals[sz:], xn)

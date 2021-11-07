@@ -68,7 +68,7 @@ int main(void)
 	//HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_SET);
 	//HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_RESET);
 
-    uint16_t breakPC = 0xFFFF;
+    uint16_t breakPC = 0x01FF;
     uint16_t wheelRPM = 0x0000;
     TxData[2] = 0x20; TxData[3] = 0x03; TxData[4] = TxData[5] = TxData[6] = TxData[7] = 0;
 
@@ -78,10 +78,10 @@ int main(void)
 		TxData[1] = breakPC >> 8;
 		if (CAN_write(&hcan1, (uint16_t) 0x060, TxData) != HAL_OK) {
 			 printf("CAN bus error\r\n");
-			 //printf("System RESET needed\r\n");
-			 Error_Handler ();
+			 printf("System RESET needed\r\n");
+			 //Error_Handler ();
 		}
-		//HAL_Delay(20);
+		HAL_Delay(20);
 		printf("breakPC = %04x ", breakPC);
 
 		// Receive example
@@ -94,8 +94,10 @@ int main(void)
 			wheelRPM = ((uint16_t) RxData[0]) + (((uint16_t) RxData[1]) << 8);
 			printf("wheelRPM = %04x\r\n", wheelRPM);
 
-			if (wheelRPM < 0x0002)
-				breakPC--;
+			if ((wheelRPM < 0x0005) && (breakPC > 0))
+				breakPC = 0.98*breakPC;
+			if (wheelRPM > 0x0005)
+				breakPC += wheelRPM / 10;
 		}
 
 	}
